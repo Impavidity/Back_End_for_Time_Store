@@ -10,7 +10,7 @@ from werkzeug.exceptions import HTTPException
 
 # Initialization
 app = Flask(__name__)
-'''
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 app.config['SECRET_KEY'] = "the api works for the time store app"
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
@@ -19,11 +19,10 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db = SQLAlchemy(app)
 auth =  HTTPBasicAuth()
 
-user1 = False
-user2 = False
-'''
 
 User = {}
+
+
 
 @app.route('/time_store/api/user',methods=['POST'])
 def user_check():
@@ -38,7 +37,9 @@ def user_check():
 
 @app.route('/time_store/api/direction',methods=['POST'])
 def direction():
-	pass
+	direction = request.json.get("direction")
+	print direction
+	return "Post Direction Success"
 
 @app.route('/time_store/api/register',methods=['POST'])
 def register():
