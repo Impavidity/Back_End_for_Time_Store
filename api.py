@@ -8,6 +8,7 @@ from itsdangerous import (TimedJSONWebSignatureSerializer
 						  as Serializer, BadSignature, SignatureExpired)
 from werkzeug.exceptions import HTTPException
 
+
 # Initialization
 app = Flask(__name__)
 
@@ -20,20 +21,22 @@ db = SQLAlchemy(app)
 auth =  HTTPBasicAuth()
 
 
-User = {}
+UserDict = {}
 
+class User(db.Model):
+	__tablename__ = 'users'
+	id = db.Column(db.Integer, primary_key=True)
+	username = db.Column(db.String(32), unique=True)
+	password_hash = db.Column(db.String(64))
+	nickname = db.Column(db.String(32), unique=True)
+	money = db.Column(db.Integer)
 
+	def hash_password(self, password):
+		self.password_hash = pwd_context.encrypt(password)
+	
+	def verify_password(self, password):
+		return pwd_context.verify(password, self.password_hash)	
 
-@app.route('/time_store/api/user',methods=['POST'])
-def user_check():
-	username = request.json.get('username')
-	if username == "YinYuning":
-		user1 = True
-		return jsonify({"message":"Login Success!"})
-	if username == "ShiPeng":
-		user2 = True
-		return jsonify({"message":"Login Success!"})
-	return jsonify({"message":"Login Failed!"})
 
 @app.route('/time_store/api/direction',methods=['POST'])
 def direction():
@@ -45,20 +48,26 @@ def direction():
 def register():
 	username = request.json.get('username')
 	password = request.json.get('password')
-	User[username] = password
+	if username is None or password is None:
+		return "Wrong Parameter"
+	if User.query.filter_by(username=username).first() is not None:
+		return "User Existed"
+	user = User(username=username)
+	user.hash_password(password)
+	db.session.add(user)
+	db.session.commit()
 	return "Success"
 
 @app.route('/time_store/api/login', methods=['POST'])
 def login():
 	username = request.json.get('username')
 	password = request.json.get('password')
-	if username in User:
-		if User[username] == password:
-			return"Login Successfully"
-		else:
-			return "Wrong Password"
-	else:
-		return "Wrong Username"
+	user = User.query.filter_by(username=username).first()
+	if not user:
+		return "Wrong User"
+	if not user.verify_password(password):
+		return "Wrong Password"
+	return "Login Successfully"
 
 @app.route('/time_store/api')
 def test():
@@ -67,5 +76,7 @@ def test():
 	
 
 if __name__ == '__main__':
+	if not os.path.exists('db.sqlite'):
+		db.create_all()
 	app.run(host="0.0.0.0",port=5000,debug=True)
 
